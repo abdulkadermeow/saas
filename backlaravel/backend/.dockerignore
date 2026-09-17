@@ -1,0 +1,5 @@
+vendor
+node_modules
+storage/logs/*.log
+.env
+.git

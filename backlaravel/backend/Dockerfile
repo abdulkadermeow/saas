@@ -12,7 +12,7 @@ WORKDIR /var/www/html
 
 # طبقة التبعيات أولاً لاستغلال كاش دوكر
 COPY composer.json ./
-RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
+RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist --no-audit
 
 COPY . .
 

@@ -50,6 +50,9 @@
         "allow-plugins": {
             "pestphp/pest-plugin": true,
             "php-http/discovery": true
+        },
+        "audit": {
+            "block": false
         }
     },
     "minimum-stability": "stable",
