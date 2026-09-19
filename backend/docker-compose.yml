@@ -1,18 +1,16 @@
 name: rafiq-backend
 
-# تشغيل الباك إند فقط (Laravel API + MySQL)
-#   docker compose up -d --build
-# الـ API بعدها على: http://localhost:8080/api
-
 services:
   db:
     image: mysql:8.4
     restart: unless-stopped
+    ports:
+      - "3306:3306"
     environment:
       MYSQL_DATABASE: ${DB_DATABASE:-rafiq}
       MYSQL_USER: ${DB_USERNAME:-rafiq}
       MYSQL_PASSWORD: ${DB_PASSWORD:-localtest123}
-      MYSQL_RANDOM_ROOT_PASSWORD: "yes"
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-localtest123}
     volumes:
       - db_data:/var/lib/mysql
     healthcheck:
@@ -22,11 +20,14 @@ services:
       retries: 10
 
   app:
-    build: ./backend
+    build: .
     restart: unless-stopped
-    env_file: ./backend/.env
+    env_file: .env
     environment:
       DB_HOST: db
+    volumes:
+      - .:/var/www/html
+      - /var/www/html/vendor
     depends_on:
       db:
         condition: service_healthy
@@ -35,9 +36,9 @@ services:
     image: nginx:1.27-alpine
     restart: unless-stopped
     volumes:
-      - ./backend/docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     ports:
-      - "8080:80"
+      - "8000:80"
     depends_on: [app]
 
 volumes:
