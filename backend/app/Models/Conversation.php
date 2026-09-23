@@ -9,8 +9,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Conversation extends Model
 {
     protected $fillable = [
-        'user_id', 'customer_name', 'phone', 'category',
-        'last_message', 'last_message_at', 'unread',
+        'user_id',
+        'customer_name',
+        'phone',
+        'category',
+        'last_message',
+        'last_message_at',
+        'unread',
     ];
 
     protected function casts(): array
@@ -21,9 +26,14 @@ class Conversation extends Model
         ];
     }
 
+    /**
+     * علاقة المستخدم مع حماية ضد القيمة الفارغة null
+     */
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class)->withDefault([
+            'name' => 'غير محدد',
+        ]);
     }
 
     public function messages(): HasMany
