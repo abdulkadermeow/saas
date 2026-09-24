@@ -30,8 +30,8 @@ class SubscriptionController extends Controller
     }
 
     /**
-     * الاشتراك بباقة: ينشئ سجل دفع pending ويعيد رابط الدفع (Stripe Checkout
-     * أو رابط تواصل للدفع اليدوي). التفعيل الفعلي يتم عبر Webhook بعد الدفع.
+     * الاشتراك بباقة: ينشئ سجل دفع pending ويعيد رابط الدفع (Stripe Checkout).
+     * التفعيل الفعلي يتم عبر Webhook بعد الدفع.
      */
     public function checkout(Request $request): JsonResponse
     {
@@ -49,6 +49,11 @@ class SubscriptionController extends Controller
         $gateway = PaymentManager::driver();
 
         [$subscription, $payment] = DB::transaction(function () use ($user, $plan, $gateway) {
+            // إلغاء أي اشتراكات معلّقة سابقة حتى لا تتراكم سجلات عالقة
+            $user->subscriptions()
+                ->where('status', 'pending')
+                ->update(['status' => 'canceled']);
+
             $subscription = Subscription::create([
                 'user_id' => $user->id,
                 'plan_id' => $plan['id'],
@@ -61,7 +66,7 @@ class SubscriptionController extends Controller
                 'user_id' => $user->id,
                 'subscription_id' => $subscription->id,
                 'gateway' => $gateway->name(),
-                'amount' => (int) ($plan['price'] * 100),
+                'amount' => (int) ($plan['price'] * 100), // تخزين بالسنتات
                 'currency' => config('services.payments.currency', 'usd'),
                 'status' => 'pending',
             ]);

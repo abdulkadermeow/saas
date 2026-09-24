@@ -50,9 +50,11 @@ class User extends Authenticatable
         return $this->hasOne(PosConnection::class);
     }
 
-    /** هل لدى المستخدم اشتراك نشط بباقة الأعمال؟ */
-    public function hasBusinessPlan(): bool
-    {
-        return $this->activeSubscription?->plan_id === 'business';
-    }
+   
+   public function hasBusinessPlan(): bool
+{
+    $plan = $this->activeSubscription?->plan();
+
+    return (bool) ($plan['pos'] ?? false);  
+}
 }

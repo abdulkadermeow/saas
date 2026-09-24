@@ -9,14 +9,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
 /**
- * ربط نظام نقاط البيع الخارجي — كل المسارات هنا محمية بـ plan.business
- * أي أنها متاحة حصرياً لمشتركي باقة الأعمال.
- *
- * اتجاهان للربط:
- * 1) الداشبورد ← POS: يحفظ المستخدم رابط ومفتاح نظامه، والباك يعمل Proxy آمن
- *    لسحب ملخص المبيعات دون كشف مفتاح الـ POS للمتصفح.
- * 2) POS → المنصة: نظام الـ POS يتحقق دورياً من صلاحية الترخيص عبر
- *    /api/pos/verify-license فيتوقف تلقائياً إذا انتهى الاشتراك.
+
  */
 class PosController extends Controller
 {

@@ -5,8 +5,10 @@
     "license": "proprietary",
     "require": {
         "php": "^8.2",
+        "filament/filament": "^3.3",
         "laravel/framework": "^11.9",
         "laravel/sanctum": "^4.0",
+        "laravel/tinker": "^3.0",
         "stripe/stripe-php": "^16.0"
     },
     "require-dev": {
@@ -29,7 +31,8 @@
     "scripts": {
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
-            "@php artisan package:discover --ansi"
+            "@php artisan package:discover --ansi",
+            "@php artisan filament:upgrade"
         ],
         "post-root-package-install": [
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
@@ -50,6 +53,11 @@
         "allow-plugins": {
             "pestphp/pest-plugin": true,
             "php-http/discovery": true
+        },
+        "policy": {
+            "advisories": {
+                "block": false
+            }
         }
     },
     "minimum-stability": "stable",

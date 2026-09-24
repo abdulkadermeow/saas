@@ -52,9 +52,26 @@ class AuthController extends Controller
         return response()->json(['message' => 'تم تسجيل الخروج']);
     }
 
+    /** المستخدم الحالي + اشتراكه النشط ورصيده — بيانات جاهزة للداشبورد */
     public function me(Request $request): JsonResponse
     {
-        return response()->json(['user' => $request->user()->only('id', 'name', 'email')]);
+        $user = $request->user()->loadMissing('activeSubscription');
+
+        $sub = $user->activeSubscription;
+
+        return response()->json([
+            'user' => $user->only('id', 'name', 'email'),
+            'subscription' => $sub ? [
+                'plan_id' => $sub->plan_id,
+                'plan' => $sub->plan(),
+                'status' => $sub->status,
+                'messages_total' => $sub->messages_total,
+                'messages_used' => $sub->messages_used,
+                'messages_remaining' => $sub->remainingMessages(),
+                'renews_at' => $sub->renews_at?->toDateString(),
+            ] : null,
+            'has_business_plan' => $user->hasBusinessPlan(),
+        ]);
     }
 
     private function tokenResponse(User $user, int $status = 200): JsonResponse

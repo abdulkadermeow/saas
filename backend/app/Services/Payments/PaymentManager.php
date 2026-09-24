@@ -2,28 +2,30 @@
 
 namespace App\Services\Payments;
 
-use InvalidArgumentException;
-
-/**
- * يختار البوابة الفعّالة من PAYMENT_GATEWAY في .env
- */
 class PaymentManager
 {
-    public static function driver(): PaymentGateway
+    /**
+     * البوابة الافتراضية (من config/services.php → payments.default).
+     * PAYMENT_GATEWAY=manual → يدوي عبر واتساب | =stripe → Stripe Checkout
+     */
+    public static function driver(?string $name = null): PaymentGateway
     {
-        return match (config('services.payments.gateway', 'manual')) {
-            'stripe' => new StripeGateway,
-            'manual' => new ManualGateway,
-            default => throw new InvalidArgumentException('بوابة دفع غير معروفة'),
+        $name = $name ?? config('services.payments.default', 'manual');
+
+        return match ($name) {
+            'manual' => new ManualDriver(),
+            'stripe' => new StripeDriver(),
+            default => throw new \InvalidArgumentException("Unknown payment gateway: {$name}"),
         };
     }
 
+    /**
+     * بوابة باسم محدد — تُستدعى من webhook العام /api/webhooks/payments/{gateway}.
+     *
+     * @throws \InvalidArgumentException
+     */
     public static function forName(string $name): PaymentGateway
     {
-        return match ($name) {
-            'stripe' => new StripeGateway,
-            'manual' => new ManualGateway,
-            default => throw new InvalidArgumentException('بوابة دفع غير معروفة'),
-        };
+        return self::driver($name);
     }
 }

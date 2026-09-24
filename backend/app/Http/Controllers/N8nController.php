@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Conversation;
+use App\Models\Subscription;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -26,8 +27,10 @@ class N8nController extends Controller
             'assistant' => ['required', 'in:rafiq,rafiqa'],
         ]);
 
-        $user = User::with(['activeSubscription', 'assistantSettings' => fn ($q) => $q->where('assistant', $data['assistant'])])
-            ->findOrFail($data['user_id']);
+        $user = User::with([
+            'activeSubscription',
+            'assistantSettings' => fn ($q) => $q->where('assistant', $data['assistant']),
+        ])->findOrFail($data['user_id']);
 
         $setting = $user->assistantSettings->first();
         $subscription = $user->activeSubscription;
@@ -68,9 +71,18 @@ class N8nController extends Controller
                 'phone' => $data['phone'],
             ]);
 
+            // البرمجة الدفاعية: التدرج في جلب القيمة لمنع بقاء الحقل null في السجلات الجديدة
+            $customerName = $data['customer_name'] 
+                ?? $conversation->customer_name 
+                ?? 'عميل غير محدد';
+
+            $category = $data['category'] 
+                ?? $conversation->category 
+                ?? 'استفسار عام';
+
             $conversation->fill([
-                'customer_name' => $data['customer_name'] ?? $conversation->customer_name,
-                'category' => $data['category'] ?? $conversation->category,
+                'customer_name' => $customerName,
+                'category' => $category,
                 'last_message' => mb_substr($data['text'], 0, 500),
                 'last_message_at' => now(),
                 'unread' => $data['direction'] === 'in',
@@ -82,12 +94,14 @@ class N8nController extends Controller
                 'via' => $data['via'] ?? 'rafiq',
             ]);
 
-            // خصم رصيد رسالة على الردود الصادرة فقط
+            // خصم رصيد رسالة على الردود الصادرة فقط — بشكل ذري (آمن ضد الطلبات المتزامنة)
             if ($data['direction'] === 'out') {
-                $subscription = $conversation->user->activeSubscription;
+                $subscription = $conversation->user?->activeSubscription;
 
-                if ($subscription && $subscription->messages_used < $subscription->messages_total) {
-                    $subscription->increment('messages_used');
+                if ($subscription) {
+                    Subscription::whereKey($subscription->id)
+                        ->whereColumn('messages_used', '<', 'messages_total')
+                        ->increment('messages_used');
                 }
             }
 
