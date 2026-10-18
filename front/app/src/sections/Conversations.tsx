@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useEffect } from 'react'
 import { MessageCircle, PhoneCall, Send, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useStore } from '@/hooks/useStore'
@@ -16,7 +17,7 @@ const DEFAULT_CATEGORY_COLOR = 'bg-slate-100 text-slate-700'
 const FILTERS: Array<'الكل' | LeadCategory> = ['الكل', 'مهتم للشراء', 'شكوى', 'اعتراض على السعر', 'استفسار عام']
 
 export default function Conversations() {
-  const { conversations, markRead, sendReply } = useStore()
+  const { conversations, markRead, sendReply, fetchConversationMessages } = useStore()
   const [selectedId, setSelectedId] = useState(conversations?.[0]?.id ?? '')
   const [filter, setFilter] = useState<'الكل' | LeadCategory>('الكل')
   const [query, setQuery] = useState('')
@@ -36,10 +37,16 @@ export default function Conversations() {
 
   const selected = (conversations || []).find((c) => c.id === selectedId) ?? list[0]
 
-  const open = (id: string) => {
+ const open = (id: string) => {
     setSelectedId(id)
     markRead(id)
+    fetchConversationMessages(id) 
   }
+  useEffect(() => {
+    if (selectedId) {
+      fetchConversationMessages(selectedId)
+    }
+  }, [selectedId, fetchConversationMessages])
 
   const send = () => {
     if (!draft.trim() || !selected) return

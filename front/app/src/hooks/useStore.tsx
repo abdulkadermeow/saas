@@ -45,6 +45,7 @@ interface Store extends StoreState {
   setPlan: (planId: string, total: number) => void
   markRead: (id: string) => void
   sendReply: (convId: string, text: string) => void
+  fetchConversationMessages: (conversationId: string | number) => Promise<void> // <- تمت إضافة التعريف هنا
 }
 
 const initialState: StoreState = {
@@ -119,7 +120,7 @@ function adaptConversation(c: any): any {
     lastMessage: c.last_message ?? '',
     lastTime: c.last_message_at ? new Date(c.last_message_at).toLocaleString('ar') : '',
     unread: c.unread,
-    messages: [],
+    messages: c.messages ?? [], // <- التأكد من وجود مصفوفة الرسائل
   }
 }
 
@@ -196,16 +197,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [refreshAll],
   )
 
-  const logout = useCallback(async () => {
-    apiLogout().catch(() => {})
-    setState((s) => ({
-      ...s,
-      user: null,
-      subscription: null,
-      conversations: [],
-      ...applySubscription(null),
-    }))
-  }, [])
+const logout = useCallback(async () => {
+  apiLogout().catch(() => {})
+  setState((s) => ({
+    ...s,
+    user: null,
+    conversations: [],
+    ...applySubscription(null),
+  }))
+}, [])
 
   const refreshMe = useCallback(async () => {
     await refreshAll()
@@ -277,13 +277,41 @@ export function StoreProvider({ children }: { children: ReactNode }) {
               lastTime: 'الآن',
               messages: [
                 ...c.messages,
-                { id: `m${Date.now()}`, from: 'bot' as const, text, time: 'الآن', via: 'rafiq' as const },
+                { id: `m${Date.now()}`, from: 'bot' as const, direction: 'out' as const, text, time: 'الآن', via: 'rafiq' as const },
               ],
             }
           : c,
       ),
     }))
   }, [])
+
+  // === الدالة الجديدة المسؤولة عن جلب الرسائل من الباك إند ===
+  const fetchConversationMessages = useCallback(async (conversationId: string | number) => {
+      try {
+        const token = localStorage.getItem('token')
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'; // استخدم رابط الـ API من متغيرات البيئة أو الرابط المحلي
+        const response = await fetch(`${apiUrl}/api/conversations/${conversationId}`, {
+          headers: {
+            'Accept': 'application/json',
+             ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          }
+        });
+        
+        if (!response.ok) throw new Error('فشل جلب الرسائل');
+        const data = await response.json();
+        
+        setState((s) => ({
+            ...s,
+          conversations: s.conversations.map((c) =>
+            String(c.id) === String(conversationId) 
+              ? { ...c, messages: data.conversation.messages } 
+              : c
+          ),
+        }));
+      } catch (error) {
+        console.error('Error fetching messages:', error);
+      }
+    }, [])
 
   const value = useMemo<Store>(() => {
     const needsSubscription = state.user !== null && state.subscription === null
@@ -304,6 +332,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setPlan,
       markRead,
       sendReply,
+      fetchConversationMessages, // <- وتمريرها هنا في القيمة
     }
   }, [
     state,
@@ -318,6 +347,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setPlan,
     markRead,
     sendReply,
+    fetchConversationMessages, // <- وهنا أيضاً
   ])
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>

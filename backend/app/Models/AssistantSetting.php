@@ -8,8 +8,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class AssistantSetting extends Model
 {
     protected $fillable = [
-        'user_id', 'assistant', 'active', 'tone',
-        'prompt', 'skills', 'voice', 'working_hours',
+        'user_id', 'assistant', 'active', 'status', 'tone',
+        'prompt', 'draft_prompt', 'skills', 'draft_skills', 'voice', 'working_hours',
     ];
 
     protected function casts(): array
@@ -17,6 +17,7 @@ class AssistantSetting extends Model
         return [
             'active' => 'boolean',
             'skills' => 'array',
+            'draft_skills' => 'array',
         ];
     }
 

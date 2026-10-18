@@ -56,8 +56,25 @@ services:
       - N8N_SECRET=${N8N_SECRET:-change-me-in-env}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - WHATSAPP_ACCESS_TOKEN=${WHATSAPP_ACCESS_TOKEN:-}
+      - WEBHOOK_URL=https://multiply-alkaline-unfixed.ngrok-free.dev/
     volumes:
       - n8n_data:/home/node/.n8n
+
+  waha:
+    image: devlikeapro/waha
+    container_name: waha
+    ports:
+      - "3333:3000"
+    volumes:
+      - ./waha_data:/app/.waha
+    environment:
+      - WHATSAPP_DEFAULT_ENGINE=WEBJS
+      - WHATSAPP_API_KEY=rafiq2026
+      - WAHA_DASHBOARD_USERNAME=admin
+      - WAHA_DASHBOARD_PASSWORD=rafiq2026
+      - WHATSAPP_HOOK_URL=http://rafiq-n8n:5678/webhook-test/waha-webhook
+      - WHATSAPP_HOOK_EVENTS=message.any
+    restart: unless-stopped
 
 volumes:
   db_data:

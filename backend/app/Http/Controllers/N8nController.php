@@ -25,21 +25,54 @@ class N8nController extends Controller
         $data = $request->validate([
             'user_id' => ['required', 'integer', 'exists:users,id'],
             'assistant' => ['required', 'in:rafiq,rafiqa'],
+            'customer_phone' => ['sometimes', 'string'], // استقبال رقم العميل من n8n
         ]);
 
         $user = User::with([
             'activeSubscription',
-            'assistantSettings' => fn ($q) => $q->where('assistant', $data['assistant']),
+            // التعديل الأول: جلب الإعدادات الفعالة فقط والأحدث لمنع استخدام المسودات أو الإعدادات القديمة
+            'assistantSettings' => fn ($q) => $q->where('assistant', $data['assistant'])
+                                                ->where('status', 'active')
+                                                ->latest(),
         ])->findOrFail($data['user_id']);
 
         $setting = $user->assistantSettings->first();
         $subscription = $user->activeSubscription;
+        
+        // التعديل الثاني: بناء التوجيه الأساسي بشكل صارم ليفهمه الـ LLM
+        $basePrompt = $setting?->prompt ?? 'أنت مساعد ذكي عام.';
+        $finalPrompt = "### تعليمات الشخصية الأساسية (يجب الالتزام بها حرفياً): ###\n" . $basePrompt . "\n";
+
+        // --- بناء ذاكرة السياق (Context Memory) ---
+        $contextMemory = "";
+        if (!empty($data['customer_phone'])) {
+            $conversation = Conversation::where('user_id', $user->id)
+                ->where('phone', $data['customer_phone'])
+                ->with(['messages' => fn($q) => $q->orderBy('created_at', 'desc')->limit(5)]) // آخر 5 رسائل فقط
+                ->first();
+
+            if ($conversation && $conversation->messages->isNotEmpty()) {
+                $contextMemory = "\n\n### معلومات العميل الحالي: ###";
+                $contextMemory .= "\nالاسم: " . ($conversation->customer_name ?? 'غير محدد');
+                $contextMemory .= "\nرقم الهاتف: " . $conversation->phone;
+                
+                $contextMemory .= "\n\n### آخر 5 رسائل في المحادثة (للسياق فقط): ###";
+                $recentMessages = $conversation->messages->reverse(); // ترتيب طبيعي للـ LLM
+                foreach ($recentMessages as $msg) {
+                    $sender = $msg->direction === 'in' ? 'العميل' : 'أنت (المساعد)';
+                    $contextMemory .= "\n{$sender}: {$msg->text}";
+                }
+            }
+        }
+        
+        // دمج الـ Prompt الأساسي من الداشبورد مع ذاكرة السياق
+        $finalPrompt .= $contextMemory;
 
         return response()->json([
             'assistant' => $data['assistant'],
             'active' => (bool) ($setting?->active ?? true),
-            'tone' => $setting?->tone ?? 'ودودة',
-            'prompt' => $setting?->prompt ?? '',
+            'tone' => $setting?->tone ?? 'رسمية',
+            'prompt' => $finalPrompt, // هنا نرسل الـ Prompt المدمج لـ n8n
             'skills' => $setting?->skills ?? [],
             'voice' => $setting?->voice,
             'working_hours' => $setting?->working_hours,
@@ -62,7 +95,7 @@ class N8nController extends Controller
             'category' => ['sometimes', 'nullable', 'string', 'max:60'],
             'direction' => ['required', 'in:in,out'],
             'text' => ['required', 'string', 'max:8000'],
-            'via' => ['sometimes', 'in:rafiq,rafiqa'],
+            'via' => ['sometimes', 'in:rafiq,rafiqa,whatsapp,telegram'],
         ]);
 
         $result = DB::transaction(function () use ($data) {

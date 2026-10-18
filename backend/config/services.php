@@ -34,7 +34,7 @@ return [
     'n8n' => [
         'secret' => env('N8N_SHARED_SECRET', env('N8N_SECRET')),
     ],
-
+    'n8n_secret' => env('N8N_SHARED_SECRET', env('N8N_SECRET')),
     // ─── Stripe ──────────────────────────────────────────────────────────
     'stripe' => [
         'key' => env('STRIPE_KEY'),
