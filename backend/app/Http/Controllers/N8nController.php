@@ -105,18 +105,18 @@ class N8nController extends Controller
             ]);
 
             // البرمجة الدفاعية: التدرج في جلب القيمة لمنع بقاء الحقل null في السجلات الجديدة
-            $customerName = $data['customer_name'] 
-                ?? $conversation->customer_name 
-                ?? 'عميل غير محدد';
+          $customerName = !empty($data['customer_name']) 
+                ? $data['customer_name'] 
+                : ($conversation->customer_name ?? 'عميل غير محدد');
 
             $category = $data['category'] 
                 ?? $conversation->category 
                 ?? 'استفسار عام';
 
             $conversation->fill([
-                'customer_name' => $customerName,
+                'customer_name' => $customerName, // سيتم تحديث الاسم هنا
                 'category' => $category,
-                'last_message' => mb_substr($data['text'], 0, 500),
+                'last_message' => mb_substr($data['text'], 0, 250),
                 'last_message_at' => now(),
                 'unread' => $data['direction'] === 'in',
             ])->save();

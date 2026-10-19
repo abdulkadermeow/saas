@@ -1,9 +1,11 @@
 <?php
 
-namespace App\Filament\Admin\Resources;
+namespace App\Filament\Resources;
 
-use App\Filament\Admin\Resources\UserResource\Pages;
-use App\Filament\Admin\Resources\UserResource\RelationManagers;
+use App\Filament\Resources\UserResource\Pages;
+use App\Filament\Resources\UserResource\RelationManagers;
+use Filament\Forms\Components\Toggle;
+use Filament\Tables\Columns\ToggleColumn; 
 use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -17,26 +19,29 @@ class UserResource extends Resource
 {
     protected static ?string $model = User::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-users'; // تغيير الأيقونة لتناسب المستخدمين
+    protected static ?string $navigationLabel = 'المستخدمين'; // تعريب اسم القائمة
 
     public static function form(Form $form): Form
-    {
-        return $form
-            ->schema([
-                Forms\Components\TextInput::make('name')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('email')
-                    ->email()
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\DateTimePicker::make('email_verified_at'),
-                Forms\Components\TextInput::make('password')
-                    ->password()
-                    ->required()
-                    ->maxLength(255),
-            ]);
-    }
+{
+    return $form
+        ->schema([
+            Forms\Components\TextInput::make('email')
+                // ... إعدادات الإيميل ...
+                ->maxLength(255),
+            
+            Forms\Components\DateTimePicker::make('email_verified_at'),
+            
+            Forms\Components\TextInput::make('password')
+                // ... إعدادات الباسوورد ...
+                ->maxLength(255),
+            
+            // هنا نضع التوغل داخل المصفوفة
+            Toggle::make('is_approved')
+                ->label('تفعيل الحساب (يسمح للمستخدم بالدخول)')
+                ->default(false),
+        ]);
+}
 
     public static function table(Table $table): Table
     {
@@ -46,6 +51,12 @@ class UserResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('email')
                     ->searchable(),
+                
+                // <-- العمود الجديد لتفعيل الحساب مباشرة من الجدول
+                ToggleColumn::make('is_approved')
+                    ->label('مفعل')
+                    ->sortable(),
+                    
                 Tables\Columns\TextColumn::make('email_verified_at')
                     ->dateTime()
                     ->sortable(),

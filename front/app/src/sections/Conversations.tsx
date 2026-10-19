@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useEffect } from 'react'
-import { MessageCircle, PhoneCall, Send, Search } from 'lucide-react'
+import { MessageCircle, PhoneCall, Send, Search, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useStore } from '@/hooks/useStore'
 import type { LeadCategory } from '@/types'
@@ -17,7 +17,7 @@ const DEFAULT_CATEGORY_COLOR = 'bg-slate-100 text-slate-700'
 const FILTERS: Array<'الكل' | LeadCategory> = ['الكل', 'مهتم للشراء', 'شكوى', 'اعتراض على السعر', 'استفسار عام']
 
 export default function Conversations() {
-  const { conversations, markRead, sendReply, fetchConversationMessages } = useStore()
+  const { conversations, markRead, sendReply, fetchConversationMessages, deleteConversation } = useStore()
   const [selectedId, setSelectedId] = useState(conversations?.[0]?.id ?? '')
   const [filter, setFilter] = useState<'الكل' | LeadCategory>('الكل')
   const [query, setQuery] = useState('')
@@ -29,7 +29,8 @@ export default function Conversations() {
         (c) =>
           (filter === 'الكل' || c.category === filter) &&
           (query === '' ||
-            (c.customerName ?? '').includes(query) ||
+            // التعديل هنا: البحث باستخدام c.name
+            ((c as any).name || '').includes(query) ||
             (c.phone ?? '').includes(query)),
       ),
     [conversations, filter, query],
@@ -37,11 +38,12 @@ export default function Conversations() {
 
   const selected = (conversations || []).find((c) => c.id === selectedId) ?? list[0]
 
- const open = (id: string) => {
+  const open = (id: string) => {
     setSelectedId(id)
     markRead(id)
     fetchConversationMessages(id) 
   }
+  
   useEffect(() => {
     if (selectedId) {
       fetchConversationMessages(selectedId)
@@ -87,47 +89,52 @@ export default function Conversations() {
           {list.length === 0 && (
             <div className="p-8 text-center text-sm text-slate-400">لا توجد محادثات مطابقة</div>
           )}
-          {list.map((c) => (
-            <button
-              key={c.id}
-              onClick={() => open(c.id)}
-              className={cn(
-                'flex w-full items-start gap-3 border-b border-slate-50 px-4 py-3.5 text-right transition-colors',
-                selected?.id === c.id ? 'bg-emerald-50/60' : 'hover:bg-slate-50',
-              )}
-            >
-              <div className="relative shrink-0">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 font-bold text-slate-600">
-                  {c.customerName?.[0] ?? '?'}
-                </div>
-                <span className="absolute -bottom-0.5 -left-0.5 rounded-full bg-white p-0.5">
-                  {c.messages?.[0]?.via === 'rafiqa' ? (
-                    <PhoneCall className="h-3 w-3 text-sky-500" />
-                  ) : (
-                    <MessageCircle className="h-3 w-3 text-emerald-500" />
-                  )}
-                </span>
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-1.5 text-sm font-bold text-slate-800">
-                    {c.customerName ?? 'عميل غير محدد'}
-                    {c.unread && <span className="h-2 w-2 rounded-full bg-emerald-500" />}
+          {list.map((c) => {
+            // التعديل الأساسي: الاعتماد على c.name لعرض الاسم
+            const displayName = (c as any).name || 'عميل غير محدد';
+            
+            return (
+              <button
+                key={c.id}
+                onClick={() => open(c.id)}
+                className={cn(
+                  'flex w-full items-start gap-3 border-b border-slate-50 px-4 py-3.5 text-right transition-colors',
+                  selected?.id === c.id ? 'bg-emerald-50/60' : 'hover:bg-slate-50',
+                )}
+              >
+                <div className="relative shrink-0">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 font-bold text-slate-600">
+                    {displayName[0] !== 'ع' ? displayName[0] : '?'}
+                  </div>
+                  <span className="absolute -bottom-0.5 -left-0.5 rounded-full bg-white p-0.5">
+                    {c.messages?.[0]?.via === 'rafiqa' ? (
+                      <PhoneCall className="h-3 w-3 text-sky-500" />
+                    ) : (
+                      <MessageCircle className="h-3 w-3 text-emerald-500" />
+                    )}
                   </span>
-                  <span className="text-[11px] text-slate-400">{c.lastTime ?? '-'}</span>
                 </div>
-                <div className="mt-0.5 truncate text-xs text-slate-500">{c.lastMessage ?? 'لا توجد رسائل'}</div>
-                <span
-                  className={cn(
-                    'mt-1.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold',
-                    CATEGORY_COLORS[c.category] ?? DEFAULT_CATEGORY_COLOR,
-                  )}
-                >
-                  {c.category ?? 'عام'}
-                </span>
-              </div>
-            </button>
-          ))}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1.5 text-sm font-bold text-slate-800">
+                      {displayName}
+                      {c.unread && <span className="h-2 w-2 rounded-full bg-emerald-500" />}
+                    </span>
+                    <span className="text-[11px] text-slate-400">{c.lastTime ?? '-'}</span>
+                  </div>
+                  <div className="mt-0.5 truncate text-xs text-slate-500">{c.lastMessage ?? 'لا توجد رسائل'}</div>
+                  <span
+                    className={cn(
+                      'mt-1.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold',
+                      CATEGORY_COLORS[c.category] ?? DEFAULT_CATEGORY_COLOR,
+                    )}
+                  >
+                    {c.category ?? 'عام'}
+                  </span>
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -138,23 +145,42 @@ export default function Conversations() {
             <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3.5">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#12141f] font-bold text-white">
-                  {selected.customerName?.[0] ?? '?'}
+                  {((selected as any).name || '?')[0]}
                 </div>
                 <div>
-                  <div className="text-sm font-bold text-slate-900">{selected.customerName ?? 'عميل غير محدد'}</div>
+                  <div className="text-sm font-bold text-slate-900">
+                    {(selected as any).name || 'عميل غير محدد'}
+                  </div>
                   <div className="text-xs text-slate-500" dir="ltr">
                     {selected.phone ?? '-'}
                   </div>
                 </div>
               </div>
-              <span
-                className={cn(
-                  'rounded-full px-3 py-1 text-xs font-bold',
-                  CATEGORY_COLORS[selected.category] ?? DEFAULT_CATEGORY_COLOR,
+              <div className="flex items-center gap-3">
+                <span
+                  className={cn(
+                    'rounded-full px-3 py-1 text-xs font-bold',
+                    CATEGORY_COLORS[selected.category] ?? DEFAULT_CATEGORY_COLOR,
+                  )}
+                >
+                  {selected.category ?? 'عام'}
+                </span>
+                
+                {deleteConversation && (
+                  <button
+                    onClick={() => {
+                      if (window.confirm('هل أنت متأكد من حذف هذه المحادثة نهائياً؟')) {
+                        deleteConversation(selected.id);
+                        setSelectedId('');
+                      }
+                    }}
+                    className="flex h-8 w-8 items-center justify-center rounded-full text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                    title="حذف المحادثة"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 )}
-              >
-                {selected.category ?? 'عام'}
-              </span>
+              </div>
             </div>
 
             <div className="flex-1 space-y-3 overflow-y-auto bg-[#f5f6f8] p-5">
@@ -163,29 +189,33 @@ export default function Conversations() {
                   لا توجد رسائل في هذه المحادثة بعد
                 </div>
               ) : (
-                (selected.messages ?? []).map((m) => (
-                  <div key={m.id} className={cn('flex', m.from === 'bot' ? 'justify-start' : 'justify-end')}>
-                    <div
-                      className={cn(
-                        'max-w-[75%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed',
-                        m.from === 'bot'
-                          ? 'rounded-tr-sm bg-white text-slate-800 ring-1 ring-slate-200'
-                          : 'rounded-tl-sm bg-emerald-600 text-white',
-                      )}
-                    >
-                      {m.from === 'bot' && (
-                        <div className="mb-1 flex items-center gap-1 text-[10px] font-bold text-emerald-600">
-                          {m.via === 'rafiqa' ? <PhoneCall className="h-3 w-3" /> : <MessageCircle className="h-3 w-3" />}
-                          {m.via === 'rafiqa' ? 'رفيقة' : 'رفيق'}
+                (selected.messages ?? []).map((m) => {
+                  const isBot = (m as any).direction === 'out' || m.from === 'bot'; 
+
+                  return (
+                    <div key={m.id} className={cn('flex', isBot ? 'justify-end' : 'justify-start')}>
+                      <div
+                        className={cn(
+                          'max-w-[75%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed',
+                          isBot
+                            ? 'rounded-tr-sm bg-[#128C7E] text-white shadow-sm'
+                            : 'rounded-tl-sm bg-white text-slate-800 ring-1 ring-slate-200 shadow-sm'
+                        )}
+                      >
+                        {isBot && (
+                          <div className="mb-1 flex items-center gap-1 text-[10px] font-bold text-emerald-100">
+                            {m.via === 'rafiqa' ? <PhoneCall className="h-3 w-3" /> : <MessageCircle className="h-3 w-3" />}
+                            {m.via === 'rafiqa' ? 'رفيقة' : 'رفيق'}
+                          </div>
+                        )}
+                        <div>{m.text}</div>
+                        <div className={cn('mt-1 text-[10px]', isBot ? 'text-emerald-100' : 'text-slate-400')}>
+                          {m.time}
                         </div>
-                      )}
-                      <div>{m.text}</div>
-                      <div className={cn('mt-1 text-[10px]', m.from === 'bot' ? 'text-slate-400' : 'text-emerald-200')}>
-                        {m.time}
                       </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
 
@@ -200,7 +230,7 @@ export default function Conversations() {
               <button
                 onClick={send}
                 disabled={!draft.trim()}
-                className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-600 text-white transition-colors hover:bg-emerald-500 disabled:opacity-40"
+                className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#128C7E] text-white transition-colors hover:bg-emerald-600 disabled:opacity-40"
               >
                 <Send className="h-4 w-4 -scale-x-100" />
               </button>

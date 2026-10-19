@@ -21,7 +21,11 @@ class AuthController extends Controller
 
         $user = User::create($data);
 
-        return $this->tokenResponse($user, 201);
+        // التعديل 1: منع إرجاع التوكن والدخول المباشر بعد التسجيلس
+        // نرجّع رسالة تطلب الانتظار حتى التفعيل
+        return response()->json([
+            'message' => 'تم إنشاء الحساب بنجاح. حسابك قيد المراجعة، يرجى الانتظار حتى يتم تفعيله من قبل الإدارة.'
+        ], 201);
     }
 
     public function login(Request $request): JsonResponse
@@ -33,9 +37,18 @@ class AuthController extends Controller
 
         $user = User::where('email', $data['email'])->first();
 
+        // 1. التحقق من صحة بيانات الدخول
         if (! $user || ! Hash::check($data['password'], $user->password)) {
             throw ValidationException::withMessages([
                 'email' => ['بيانات الدخول غير صحيحة'],
+            ]);
+        }
+
+        // 2. التعديل 2: التحقق من التفعيل (is_approved) قبل إرجاع التوكن
+        if (! $user->is_approved) {
+            // استخدام ValidationException لتتوافق مع تصميم أخطاء الرياكت عندك
+            throw ValidationException::withMessages([
+                'email' => ['حسابك قيد المراجعة. يرجى الانتظار حتى يتم تفعيله من قبل الإدارة.'],
             ]);
         }
 

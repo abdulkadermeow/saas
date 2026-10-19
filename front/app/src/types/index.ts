@@ -6,6 +6,7 @@ export interface ChatMessage {
   text: string
   time: string
   via: 'rafiq' | 'rafiqa'
+  direction?: 'in' | 'out';
 }
 
 export interface Conversation {
@@ -17,6 +18,7 @@ export interface Conversation {
   lastTime: string
   unread: boolean
   messages: ChatMessage[]
+  customer_name?: string;
 }
 
 export interface AssistantConfig {
