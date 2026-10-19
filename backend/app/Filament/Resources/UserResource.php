@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Admin\Resources; // <-- السر هنا (تم إضافة Admin)
+namespace App\Filament\Resources;
 
 use App\Filament\Admin\Resources\UserResource\Pages; // <-- وهنا
 use App\Filament\Admin\Resources\UserResource\RelationManagers; // <-- وهنا

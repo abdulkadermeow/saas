@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources;
+namespace App\Filament\Admin\Resources;
 
 use App\Filament\Resources\UserResource\Pages;
 use App\Filament\Resources\UserResource\RelationManagers;
@@ -20,8 +20,7 @@ class UserResource extends Resource
     protected static ?string $model = User::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-users'; // تغيير الأيقونة لتناسب المستخدمين
-    protected static ?string $navigationLabel = 'المستخدمين'; // تعريب اسم القائمة
-
+    
     public static function form(Form $form): Form
 {
     return $form
