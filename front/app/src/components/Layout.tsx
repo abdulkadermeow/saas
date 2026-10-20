@@ -18,7 +18,7 @@ const NAV: { key: PageKey; label: string; icon: typeof LayoutDashboard }[] = [
   { key: 'overview', label: 'نظرة عامة', icon: LayoutDashboard },
   { key: 'conversations', label: 'المحادثات والعملاء', icon: MessagesSquare },
   { key: 'assistants', label: 'المساعدون', icon: Bot },
-  { key: 'whatsapp', label: 'ربط الواتساب', icon: Plug },
+ {/* { key: 'whatsapp', label: 'ربط الواتساب', icon: Plug },*/}
   { key: 'subscription', label: 'الاشتراك والباقات', icon: CreditCard },
 ]
 
