@@ -43,7 +43,7 @@ function Shell() {
       {currentPage === 'overview' && <Overview onNavigate={handleNavigate} />}
       {currentPage === 'conversations' && <Conversations />}
       {currentPage === 'assistants' && <Assistants />}
-      {currentPage === 'whatsapp' && <WhatsAppConnect />}
+      {/*{currentPage === 'whatsapp' && <WhatsAppConnect />}*/}
       {currentPage === 'subscription' && <Subscription />}
     </Layout>
   )
